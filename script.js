@@ -6,6 +6,7 @@ class DentalShadeDetector {
         this.stream = null;
         this.model = null;
         this.capturedImageData = null;
+        this.geminiAnalyzer = null;
         
         // VITA Shade Guide data with RGB approximations
         this.vitaShadeGuide = {
@@ -34,6 +35,7 @@ class DentalShadeDetector {
         this.setupEventListeners();
         this.renderShadeGuide();
         await this.loadAIModel();
+        this.initializeGeminiAPI();
     }
     
     setupEventListeners() {
@@ -51,6 +53,17 @@ class DentalShadeDetector {
         } catch (error) {
             console.error('Error loading AI model:', error);
             this.showError('Failed to load AI model. Some features may not work properly.');
+        }
+    }
+    
+    initializeGeminiAPI() {
+        try {
+            // Try to get API key from localStorage first
+            const savedApiKey = localStorage.getItem('gemini_api_key') || CONFIG.GEMINI_API_KEY;
+            this.geminiAnalyzer = new GeminiShadeAnalyzer(savedApiKey);
+            console.log('Gemini API integration initialized');
+        } catch (error) {
+            console.error('Gemini API initialization error:', error);
         }
     }
     
@@ -118,18 +131,51 @@ class DentalShadeDetector {
         }
         
         try {
-            document.getElementById('analyzeBtn').textContent = 'Analyzing...';
+            document.getElementById('analyzeBtn').textContent = 'AI Analyzing...';
             document.getElementById('analyzeBtn').disabled = true;
             
-            // Analyze the captured image
-            const dominantColor = this.extractDominantColor(this.capturedImageData);
-            const matchedShade = this.findBestShadeMatch(dominantColor);
+            // Try Gemini AI analysis first
+            let analysisResults = null;
+            let usingAI = false;
+            
+            if (this.geminiAnalyzer && this.geminiAnalyzer.isAvailable) {
+                try {
+                    console.log('🤖 Using Gemini AI for professional shade analysis...');
+                    const imageBase64 = this.geminiAnalyzer.preprocessImage(this.canvas);
+                    const geminiResponse = await this.geminiAnalyzer.analyzeToothShade(imageBase64);
+                    
+                    if (geminiResponse.success) {
+                        analysisResults = this.geminiAnalyzer.formatAnalysisResults(geminiResponse);
+                        usingAI = true;
+                        console.log('✅ Gemini AI analysis completed');
+                    }
+                } catch (aiError) {
+                    console.warn('AI analysis failed, falling back to basic analysis:', aiError.message);
+                    this.showWarning('AI analysis unavailable. Using basic color analysis.');
+                }
+            }
+            
+            // Fallback to basic analysis if AI is not available
+            if (!analysisResults) {
+                console.log('📊 Using basic color analysis...');
+                const dominantColor = this.extractDominantColor(this.capturedImageData);
+                const matchedShade = this.findBestShadeMatch(dominantColor);
+                analysisResults = {
+                    primary_match: {
+                        shade: matchedShade.shadeId,
+                        confidence: matchedShade.confidence,
+                        description: matchedShade.name
+                    },
+                    ai_enhanced: false,
+                    provider: 'Basic Color Analysis'
+                };
+            }
             
             // Display results
-            this.displayAnalysisResults(dominantColor, matchedShade);
+            this.displayEnhancedAnalysisResults(analysisResults, usingAI);
             
             // Highlight matched shade in guide
-            this.highlightMatchedShade(matchedShade.shadeId);
+            this.highlightMatchedShade(analysisResults.primary_match.shade);
             
         } catch (error) {
             console.error('Error analyzing shade:', error);
@@ -233,6 +279,119 @@ class DentalShadeDetector {
         resultsContainer.innerHTML = resultHTML;
     }
     
+    displayEnhancedAnalysisResults(results, usingAI) {
+        const resultsContainer = document.getElementById('analysisResults');
+        const primaryMatch = results.primary_match;
+        
+        let aiStatusBadge = '';
+        if (usingAI) {
+            aiStatusBadge = '<div class="ai-badge">🤖 AI Enhanced</div>';
+        } else {
+            aiStatusBadge = '<div class="basic-badge">📊 Basic Analysis</div>';
+        }
+        
+        let secondaryMatches = '';
+        if (results.secondary_matches && results.secondary_matches.length > 0) {
+            secondaryMatches = `
+                <div class="secondary-matches">
+                    <h5>Alternative Matches:</h5>
+                    <div class="secondary-list">
+                        ${results.secondary_matches.map(shade => `
+                            <span class="secondary-shade" data-shade="${shade}">${shade}</span>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        let professionalInsights = '';
+        if (results.professional_insights) {
+            const insights = results.professional_insights;
+            professionalInsights = `
+                <div class="professional-insights">
+                    <h5>Professional Insights:</h5>
+                    ${insights.lighting_assessment ? `<p><strong>Lighting:</strong> ${insights.lighting_assessment}</p>` : ''}
+                    ${insights.recommendations ? `
+                        <div class="recommendations">
+                            <strong>Recommendations:</strong>
+                            <ul>
+                                ${insights.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    ${insights.factors_considered ? `
+                        <div class="factors">
+                            <strong>Analysis Factors:</strong>
+                            <ul>
+                                ${insights.factors_considered.map(factor => `<li>${factor}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        let qualityMetrics = '';
+        if (results.quality_metrics) {
+            const quality = results.quality_metrics;
+            qualityMetrics = `
+                <div class="quality-metrics">
+                    <h5>Image Quality Assessment:</h5>
+                    <div class="quality-scores">
+                        <div class="quality-score">
+                            <span>Overall Suitability:</span>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: ${quality.overall_suitability}%"></div>
+                            </div>
+                            <span>${quality.overall_suitability}%</span>
+                        </div>
+                        ${quality.lighting_score ? `
+                            <div class="quality-score">
+                                <span>Lighting Quality:</span>
+                                <div class="score-bar">
+                                    <div class="score-fill" style="width: ${quality.lighting_score}%"></div>
+                                </div>
+                                <span>${quality.lighting_score}%</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        const resultHTML = `
+            ${aiStatusBadge}
+            <div class="analysis-result enhanced">
+                <div class="shade-preview" style="background-color: ${this.vitaShadeGuide[primaryMatch.shade]?.color || '#F0F0F0'}"></div>
+                <div class="analysis-info">
+                    <h4>Primary Match: ${primaryMatch.shade}</h4>
+                    <p>${primaryMatch.description}</p>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${primaryMatch.confidence}%"></div>
+                    </div>
+                    <p style="margin-top: 5px;">Confidence: ${Math.round(primaryMatch.confidence)}%</p>
+                </div>
+            </div>
+            ${secondaryMatches}
+            ${professionalInsights}
+            ${qualityMetrics}
+            <div class="analysis-footer">
+                <small>Analysis by: ${results.provider}</small>
+            </div>
+        `;
+        
+        resultsContainer.innerHTML = resultHTML;
+        
+        // Add click handlers for secondary matches
+        document.querySelectorAll('.secondary-shade').forEach(element => {
+            element.addEventListener('click', () => {
+                const shade = element.dataset.shade;
+                this.highlightMatchedShade(shade);
+                this.showShadeInfo(shade, this.vitaShadeGuide[shade]);
+            });
+        });
+    }
+    
     renderShadeGuide() {
         const shadeGuideContainer = document.getElementById('shadeGuide');
         
@@ -273,24 +432,51 @@ class DentalShadeDetector {
     }
     
     showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.style.cssText = `
+        this.showNotification(message, 'error');
+    }
+    
+    showWarning(message) {
+        this.showNotification(message, 'warning');
+    }
+    
+    showSuccess(message) {
+        this.showNotification(message, 'success');
+    }
+    
+    showNotification(message, type = 'error') {
+        const colors = {
+            error: '#e74c3c',
+            warning: '#f39c12',
+            success: '#27ae60'
+        };
+        
+        const icons = {
+            error: '❌',
+            warning: '⚠️',
+            success: '✅'
+        };
+        
+        const notification = document.createElement('div');
+        notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: #e74c3c;
+            background: ${colors[type]};
             color: white;
             padding: 15px 20px;
             border-radius: 8px;
             z-index: 1000;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-width: 300px;
+            animation: slideIn 0.3s ease-out;
         `;
-        errorDiv.textContent = message;
+        notification.innerHTML = `${icons[type]} ${message}`;
         
-        document.body.appendChild(errorDiv);
+        document.body.appendChild(notification);
         
         setTimeout(() => {
-            errorDiv.remove();
+            notification.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => notification.remove(), 300);
         }, 5000);
     }
 }

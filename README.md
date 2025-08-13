@@ -4,10 +4,14 @@ A web-based application that uses AI and computer vision to detect and match too
 
 ## Features
 
+- **🤖 Gemini AI Integration**: Professional-grade shade analysis using Google's advanced AI
 - **Real-time Camera Access**: Use your device's camera to capture tooth images
 - **AI-Powered Analysis**: Uses TensorFlow.js and computer vision algorithms for color analysis
 - **VITA Shade Guide Matching**: Compares captured colors against the standard VITA shade guide
 - **Professional UI**: Clean, modern interface designed for dental professionals
+- **Quality Assessment**: Automatic image quality scoring and recommendations
+- **Professional Insights**: Detailed analysis factors and clinical recommendations
+- **Intelligent Fallback**: Graceful degradation to basic analysis when AI is unavailable
 - **Color Analysis**: Advanced color matching using perceptual color distance algorithms
 - **Confidence Scoring**: Provides confidence levels for shade matches
 - **Mobile Responsive**: Works on desktop and mobile devices
@@ -15,31 +19,39 @@ A web-based application that uses AI and computer vision to detect and match too
 ## Technologies Used
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **AI/ML**: TensorFlow.js, MobileNet
+- **AI/ML**: Google Gemini Vision API, TensorFlow.js, MobileNet
 - **Computer Vision**: Canvas API for image processing
 - **Camera**: WebRTC getUserMedia API
 - **Color Science**: Delta E color distance calculations
+- **Professional Analysis**: Dental expertise-trained AI prompts
 
 ## How to Use
 
-1. **Start the Application**
+1. **Setup AI Enhancement (Optional but Recommended)**
+   - Get your free Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Enter the key when prompted for professional AI analysis
+   - See `GEMINI_SETUP.md` for detailed setup instructions
+
+2. **Start the Application**
    - Open `index.html` in a modern web browser
    - Ensure you have camera permissions enabled
 
-2. **Capture Tooth Images**
+3. **Capture Tooth Images**
    - Click "Start Camera" to access your device's camera
    - Position the tooth in good lighting conditions
    - Click "Capture Image" to take a photo
 
-3. **Analyze Shade**
-   - Click "Analyze Shade" to process the captured image
-   - View the matched shade from the VITA guide
-   - Check the confidence level of the match
+4. **AI-Enhanced Analysis**
+   - Click "Analyze Shade" for comprehensive AI processing
+   - Get professional insights and quality assessment
+   - View primary and secondary shade matches
+   - Review clinical recommendations
 
-4. **Review Results**
-   - See the detected color and matched shade
+5. **Professional Results**
+   - See AI-powered shade matching with confidence scores
+   - Review image quality metrics and lighting assessment
+   - Get professional recommendations for optimal results
    - Browse the complete VITA shade guide reference
-   - Click on shade samples for detailed information
 
 ## VITA Shade Guide Reference
 
