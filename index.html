@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dental Shade Guide Detection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦷 Dental Shade Guide Detection</h1>
+            <p>AI-powered tooth shade matching using your camera</p>
+        </header>
+
+        <div class="main-content">
+            <div class="camera-section">
+                <div class="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                </div>
+                <div class="controls">
+                    <button id="startCamera" class="btn btn-primary">Start Camera</button>
+                    <button id="captureBtn" class="btn btn-secondary" disabled>Capture Image</button>
+                    <button id="analyzeBtn" class="btn btn-success" disabled>Analyze Shade</button>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="captured-image">
+                    <h3>Captured Image</h3>
+                    <div id="capturedImageContainer">
+                        <p>No image captured yet</p>
+                    </div>
+                </div>
+
+                <div class="shade-analysis">
+                    <h3>Shade Analysis</h3>
+                    <div id="analysisResults">
+                        <p>Click "Analyze Shade" after capturing an image</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="shade-guide-reference">
+                <h3>VITA Shade Guide Reference</h3>
+                <div class="shade-guide-grid" id="shadeGuide">
+                    <!-- Shade guide will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <h3>Instructions</h3>
+            <ol>
+                <li>Click "Start Camera" to access your device camera</li>
+                <li>Position the tooth in good lighting conditions</li>
+                <li>Click "Capture Image" to take a photo</li>
+                <li>Click "Analyze Shade" to detect the tooth shade</li>
+                <li>View the matched shade from the VITA guide</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
