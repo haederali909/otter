@@ -179,6 +179,16 @@ header p {
     transform: translateY(-2px);
 }
 
+.btn-cancel {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background: #c0392b;
+    transform: translateY(-2px);
+}
+
 .btn-auto {
     background: #e67e22;
     color: white;
@@ -305,6 +315,109 @@ header p {
     color: #3498db;
 }
 
+/* Cropping Interface Styles */
+.cropping-interface {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border: 2px solid #3498db;
+}
+
+.cropping-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.cropping-header h4 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.cropping-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cropping-controls .btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    min-width: auto;
+}
+
+.cropping-canvas-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    min-height: 300px;
+}
+
+.cropping-canvas {
+    max-width: 100%;
+    max-height: 400px;
+    display: block;
+}
+
+.crop-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.crop-selection {
+    position: absolute;
+    border: 2px solid #27ae60;
+    background: rgba(39, 174, 96, 0.1);
+    cursor: move;
+    pointer-events: all;
+    min-width: 50px;
+    min-height: 50px;
+}
+
+.crop-handle {
+    position: absolute;
+    background: #27ae60;
+    border: 2px solid white;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    pointer-events: all;
+    cursor: pointer;
+}
+
+.crop-handle.top-left { top: -6px; left: -6px; cursor: nw-resize; }
+.crop-handle.top-right { top: -6px; right: -6px; cursor: ne-resize; }
+.crop-handle.bottom-left { bottom: -6px; left: -6px; cursor: sw-resize; }
+.crop-handle.bottom-right { bottom: -6px; right: -6px; cursor: se-resize; }
+.crop-handle.top { top: -6px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+.crop-handle.bottom { bottom: -6px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+.crop-handle.left { left: -6px; top: 50%; transform: translateY(-50%); cursor: w-resize; }
+.crop-handle.right { right: -6px; top: 50%; transform: translateY(-50%); cursor: e-resize; }
+
+.cropping-status {
+    text-align: center;
+    padding: 10px;
+    background: #e8f5e8;
+    border-radius: 8px;
+    color: #27ae60;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
 .image-source-indicator {
     position: absolute;
     top: 10px;
@@ -332,10 +445,43 @@ header p {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.shade-guide-reference h3 {
+.shade-guide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.shade-guide-header h3 {
     color: #2c3e50;
     font-size: 1.4rem;
+    margin: 0;
+}
+
+.shade-guide-selector {
+    display: flex;
+    gap: 10px;
+}
+
+.guide-btn {
+    padding: 8px 16px;
+    border: 2px solid #3498db;
+    background: transparent;
+    color: #3498db;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.guide-btn.active,
+.guide-btn:hover {
+    background: #3498db;
+    color: white;
+    transform: translateY(-1px);
 }
 
 .shade-guide-grid {
@@ -378,6 +524,68 @@ header p {
     font-weight: 600;
     font-size: 0.9rem;
     color: #2c3e50;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.shade-label small {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+    font-weight: normal;
+}
+
+/* 3D Master Shade Groups */
+.shade-group {
+    margin-bottom: 25px;
+}
+
+.shade-group-title {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border-radius: 20px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.shade-group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 12px;
+}
+
+/* Upload Options Modal */
+.upload-options-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+}
+
+.upload-options-modal .modal-content {
+    max-width: 450px;
+}
+
+.upload-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.upload-options .btn {
+    padding: 15px 20px;
+    font-size: 1rem;
+    border-radius: 10px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .info-panel {

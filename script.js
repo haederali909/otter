@@ -8,6 +8,7 @@ class DentalShadeDetector {
         this.capturedImageData = null;
         this.geminiAnalyzer = null;
         this.teethDetector = null;
+        this.imageCropper = null;
         
         // VITA Shade Guide data with RGB approximations
         this.vitaShadeGuide = {
@@ -29,6 +30,46 @@ class DentalShadeDetector {
             'D4': { color: '#ECEADD', rgb: [236, 234, 221], name: 'D4 - Dark Reddish Gray' }
         };
         
+        // 3D Master Shade Guide data - Professional shade system
+        this.threeDMasterShadeGuide = {
+            // Lightest Group (Value 1)
+            '1M1': { color: '#F8F4EE', rgb: [248, 244, 238], name: '1M1 - Lightest Middle', group: 'Value 1', chroma: 'M1' },
+            '1M2': { color: '#F6F2EC', rgb: [246, 242, 236], name: '1M2 - Light Middle', group: 'Value 1', chroma: 'M2' },
+            '2L1.5': { color: '#F4F0EA', rgb: [244, 240, 234], name: '2L1.5 - Light Left', group: 'Value 2', chroma: 'L1.5' },
+            '2L2.5': { color: '#F2EEE8', rgb: [242, 238, 232], name: '2L2.5 - Light Left', group: 'Value 2', chroma: 'L2.5' },
+            '2M1': { color: '#F3EFE9', rgb: [243, 239, 233], name: '2M1 - Light Middle', group: 'Value 2', chroma: 'M1' },
+            '2M2': { color: '#F1EDE7', rgb: [241, 237, 231], name: '2M2 - Light Middle', group: 'Value 2', chroma: 'M2' },
+            '2M3': { color: '#EFEBE5', rgb: [239, 235, 229], name: '2M3 - Light Middle', group: 'Value 2', chroma: 'M3' },
+            '2R1.5': { color: '#F2EEE6', rgb: [242, 238, 230], name: '2R1.5 - Light Right', group: 'Value 2', chroma: 'R1.5' },
+            '2R2.5': { color: '#F0ECE4', rgb: [240, 236, 228], name: '2R2.5 - Light Right', group: 'Value 2', chroma: 'R2.5' },
+            
+            // Medium Light Group (Value 3)
+            '3L1.5': { color: '#F0ECE6', rgb: [240, 236, 230], name: '3L1.5 - Medium Light Left', group: 'Value 3', chroma: 'L1.5' },
+            '3L2.5': { color: '#EEEAE4', rgb: [238, 234, 228], name: '3L2.5 - Medium Light Left', group: 'Value 3', chroma: 'L2.5' },
+            '3M1': { color: '#EFEBE5', rgb: [239, 235, 229], name: '3M1 - Medium Light Middle', group: 'Value 3', chroma: 'M1' },
+            '3M2': { color: '#EDE9E3', rgb: [237, 233, 227], name: '3M2 - Medium Light Middle', group: 'Value 3', chroma: 'M2' },
+            '3M3': { color: '#EBE7E1', rgb: [235, 231, 225], name: '3M3 - Medium Light Middle', group: 'Value 3', chroma: 'M3' },
+            '3R1.5': { color: '#EEEAE2', rgb: [238, 234, 226], name: '3R1.5 - Medium Light Right', group: 'Value 3', chroma: 'R1.5' },
+            '3R2.5': { color: '#ECE8E0', rgb: [236, 232, 224], name: '3R2.5 - Medium Light Right', group: 'Value 3', chroma: 'R2.5' },
+            
+            // Medium Group (Value 4)
+            '4L1.5': { color: '#ECE8E2', rgb: [236, 232, 226], name: '4L1.5 - Medium Left', group: 'Value 4', chroma: 'L1.5' },
+            '4L2.5': { color: '#EAE6E0', rgb: [234, 230, 224], name: '4L2.5 - Medium Left', group: 'Value 4', chroma: 'L2.5' },
+            '4M1': { color: '#EBE7E1', rgb: [235, 231, 225], name: '4M1 - Medium Middle', group: 'Value 4', chroma: 'M1' },
+            '4M2': { color: '#E9E5DF', rgb: [233, 229, 223], name: '4M2 - Medium Middle', group: 'Value 4', chroma: 'M2' },
+            '4M3': { color: '#E7E3DD', rgb: [231, 227, 221], name: '4M3 - Medium Middle', group: 'Value 4', chroma: 'M3' },
+            '4R1.5': { color: '#EAE6DE', rgb: [234, 230, 222], name: '4R1.5 - Medium Right', group: 'Value 4', chroma: 'R1.5' },
+            '4R2.5': { color: '#E8E4DC', rgb: [232, 228, 220], name: '4R2.5 - Medium Right', group: 'Value 4', chroma: 'R2.5' },
+            
+            // Medium Dark Group (Value 5)
+            '5M1': { color: '#E7E3DD', rgb: [231, 227, 221], name: '5M1 - Medium Dark Middle', group: 'Value 5', chroma: 'M1' },
+            '5M2': { color: '#E5E1DB', rgb: [229, 225, 219], name: '5M2 - Medium Dark Middle', group: 'Value 5', chroma: 'M2' },
+            '5M3': { color: '#E3DFD9', rgb: [227, 223, 217], name: '5M3 - Medium Dark Middle', group: 'Value 5', chroma: 'M3' }
+        };
+        
+        // Current active shade guide
+        this.activeShadeGuide = 'vita'; // 'vita' or '3dmaster'
+        
         this.initializeApp();
     }
     
@@ -37,6 +78,7 @@ class DentalShadeDetector {
         this.renderShadeGuide();
         await this.loadAIModel();
         this.initializeGeminiAPI();
+        this.initializeImageCropper();
     }
     
     setupEventListeners() {
@@ -52,8 +94,15 @@ class DentalShadeDetector {
         document.getElementById('sensitivitySlider').addEventListener('input', (e) => this.updateSensitivity(e.target.value));
         document.getElementById('captureDelaySlider').addEventListener('input', (e) => this.updateCaptureDelay(e.target.value));
         
+        // Shade guide selector
+        document.getElementById('vitaGuideBtn').addEventListener('click', () => this.switchShadeGuide('vita'));
+        document.getElementById('threeDMasterBtn').addEventListener('click', () => this.switchShadeGuide('3dmaster'));
+        
         // Auto-capture event
         document.addEventListener('autoCapture', (e) => this.handleAutoCapture(e.detail));
+        
+        // Crop complete event
+        document.addEventListener('cropComplete', (e) => this.handleCropComplete(e.detail));
         
         // Setup drag & drop functionality
         this.setupDragAndDrop();
@@ -96,6 +145,46 @@ class DentalShadeDetector {
         } catch (error) {
             console.error('Teeth detector initialization error:', error);
         }
+    }
+    
+    initializeImageCropper() {
+        try {
+            this.imageCropper = new ImageCropper(this.teethDetector, this.geminiAnalyzer);
+            console.log('✂️ Image cropper ready');
+        } catch (error) {
+            console.error('Image cropper initialization error:', error);
+        }
+    }
+    
+    switchShadeGuide(guideType) {
+        this.activeShadeGuide = guideType;
+        
+        // Update UI buttons
+        document.getElementById('vitaGuideBtn').classList.toggle('active', guideType === 'vita');
+        document.getElementById('threeDMasterBtn').classList.toggle('active', guideType === '3dmaster');
+        
+        // Update title
+        const title = guideType === 'vita' ? 'VITA Classical Shade Guide' : '3D Master Shade System';
+        document.getElementById('shadeGuideTitle').textContent = title;
+        
+        // Re-render shade guide
+        this.renderShadeGuide();
+        
+        console.log(`🎨 Switched to ${guideType} shade guide`);
+    }
+    
+    handleCropComplete(detail) {
+        const { croppedCanvas } = detail;
+        
+        // Use the cropped canvas as the main canvas
+        this.canvas.width = croppedCanvas.width;
+        this.canvas.height = croppedCanvas.height;
+        this.ctx.drawImage(croppedCanvas, 0, 0);
+        
+        // Process the cropped image
+        this.processImageForAnalysis('upload-cropped', croppedCanvas.toDataURL());
+        
+        this.showSuccess('✂️ Image cropped successfully! Ready for analysis.');
     }
     
     toggleLiveDetection(enabled) {
@@ -238,19 +327,81 @@ class DentalShadeDetector {
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
-                // Draw uploaded image to canvas
-                this.canvas.width = img.width;
-                this.canvas.height = img.height;
-                this.ctx.drawImage(img, 0, 0);
-                
-                // Process for analysis
-                this.processImageForAnalysis('upload', img.src);
-                
-                this.showSuccess(`Image "${file.name}" uploaded successfully!`);
+                // Show cropping interface for uploaded images
+                this.showUploadedImageOptions(img, file.name);
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
+    }
+    
+    showUploadedImageOptions(img, fileName) {
+        // Show a dialog asking user if they want to crop or auto-detect
+        const modal = document.createElement('div');
+        modal.className = 'upload-options-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <h3>📁 ${fileName} Uploaded</h3>
+                    <p>How would you like to process this image?</p>
+                    <div class="upload-options">
+                        <button id="useFullImage" class="btn btn-primary">📷 Use Full Image</button>
+                        <button id="cropImage" class="btn btn-secondary">✂️ Crop Teeth Area</button>
+                        <button id="autoDetectTeeth" class="btn btn-success">🤖 Auto-Detect & Crop</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Event handlers
+        document.getElementById('useFullImage').addEventListener('click', () => {
+            this.useFullImage(img, fileName);
+            modal.remove();
+        });
+        
+        document.getElementById('cropImage').addEventListener('click', () => {
+            this.startManualCrop(img);
+            modal.remove();
+        });
+        
+        document.getElementById('autoDetectTeeth').addEventListener('click', () => {
+            this.autoDetectAndCrop(img, fileName);
+            modal.remove();
+        });
+    }
+    
+    useFullImage(img, fileName) {
+        // Use the full uploaded image
+        this.canvas.width = img.width;
+        this.canvas.height = img.height;
+        this.ctx.drawImage(img, 0, 0);
+        
+        this.processImageForAnalysis('upload', img.src);
+        this.showSuccess(`📷 Using full image "${fileName}"`);
+    }
+    
+    startManualCrop(img) {
+        // Start manual cropping interface
+        if (this.imageCropper) {
+            this.imageCropper.startCropping(img);
+        }
+    }
+    
+    async autoDetectAndCrop(img, fileName) {
+        this.showWarning('🤖 Auto-detecting teeth in uploaded image...');
+        
+        if (this.imageCropper) {
+            // Start cropping interface and immediately trigger auto-detect
+            this.imageCropper.startCropping(img);
+            setTimeout(() => {
+                this.imageCropper.autoDetectTeeth();
+            }, 500);
+        } else {
+            // Fallback to full image
+            this.useFullImage(img, fileName);
+        }
     }
     
     processImageForAnalysis(source, imageSrc = null) {
@@ -607,23 +758,76 @@ class DentalShadeDetector {
     
     renderShadeGuide() {
         const shadeGuideContainer = document.getElementById('shadeGuide');
+        shadeGuideContainer.innerHTML = ''; // Clear existing content
         
-        for (const [shadeId, shadeData] of Object.entries(this.vitaShadeGuide)) {
-            const shadeElement = document.createElement('div');
-            shadeElement.className = 'shade-item';
-            shadeElement.dataset.shadeId = shadeId;
+        const currentGuide = this.activeShadeGuide === 'vita' ? this.vitaShadeGuide : this.threeDMasterShadeGuide;
+        
+        if (this.activeShadeGuide === '3dmaster') {
+            // Group 3D Master shades by value
+            const groupedShades = this.group3DMasterShades(currentGuide);
             
-            shadeElement.innerHTML = `
-                <div class="shade-color" style="background-color: ${shadeData.color}"></div>
-                <div class="shade-label">${shadeId}</div>
-            `;
-            
-            shadeElement.addEventListener('click', () => {
-                this.showShadeInfo(shadeId, shadeData);
-            });
-            
-            shadeGuideContainer.appendChild(shadeElement);
+            for (const [groupName, shades] of Object.entries(groupedShades)) {
+                const groupContainer = document.createElement('div');
+                groupContainer.className = 'shade-group';
+                
+                const groupTitle = document.createElement('h4');
+                groupTitle.className = 'shade-group-title';
+                groupTitle.textContent = groupName;
+                groupContainer.appendChild(groupTitle);
+                
+                const groupGrid = document.createElement('div');
+                groupGrid.className = 'shade-group-grid';
+                
+                for (const [shadeId, shadeData] of Object.entries(shades)) {
+                    const shadeElement = this.createShadeElement(shadeId, shadeData);
+                    groupGrid.appendChild(shadeElement);
+                }
+                
+                groupContainer.appendChild(groupGrid);
+                shadeGuideContainer.appendChild(groupContainer);
+            }
+        } else {
+            // Render VITA guide normally
+            for (const [shadeId, shadeData] of Object.entries(currentGuide)) {
+                const shadeElement = this.createShadeElement(shadeId, shadeData);
+                shadeGuideContainer.appendChild(shadeElement);
+            }
         }
+    }
+    
+    group3DMasterShades(shades) {
+        const grouped = {};
+        
+        for (const [shadeId, shadeData] of Object.entries(shades)) {
+            const group = shadeData.group;
+            if (!grouped[group]) {
+                grouped[group] = {};
+            }
+            grouped[group][shadeId] = shadeData;
+        }
+        
+        return grouped;
+    }
+    
+    createShadeElement(shadeId, shadeData) {
+        const shadeElement = document.createElement('div');
+        shadeElement.className = 'shade-item';
+        shadeElement.dataset.shadeId = shadeId;
+        
+        const label = this.activeShadeGuide === '3dmaster' ? 
+            `${shadeId}<br><small>${shadeData.chroma}</small>` : 
+            shadeId;
+        
+        shadeElement.innerHTML = `
+            <div class="shade-color" style="background-color: ${shadeData.color}"></div>
+            <div class="shade-label">${label}</div>
+        `;
+        
+        shadeElement.addEventListener('click', () => {
+            this.showShadeInfo(shadeId, shadeData);
+        });
+        
+        return shadeElement;
     }
     
     highlightMatchedShade(shadeId) {

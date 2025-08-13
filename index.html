@@ -72,6 +72,37 @@
                             <p>🖱️ Or drag & drop an image here</p>
                         </div>
                     </div>
+                    
+                    <!-- Cropping Interface -->
+                    <div id="croppingInterface" class="cropping-interface" style="display: none;">
+                        <div class="cropping-header">
+                            <h4>🦷 Select Teeth Area</h4>
+                            <div class="cropping-controls">
+                                <button id="autoDetectBtn" class="btn btn-primary">🤖 Auto Detect</button>
+                                <button id="resetCropBtn" class="btn btn-secondary">🔄 Reset</button>
+                                <button id="applyCropBtn" class="btn btn-success">✅ Apply Crop</button>
+                                <button id="cancelCropBtn" class="btn btn-cancel">❌ Cancel</button>
+                            </div>
+                        </div>
+                        <div class="cropping-canvas-container">
+                            <canvas id="croppingCanvas" class="cropping-canvas"></canvas>
+                            <div id="cropOverlay" class="crop-overlay">
+                                <div class="crop-selection" id="cropSelection">
+                                    <div class="crop-handle top-left"></div>
+                                    <div class="crop-handle top-right"></div>
+                                    <div class="crop-handle bottom-left"></div>
+                                    <div class="crop-handle bottom-right"></div>
+                                    <div class="crop-handle top"></div>
+                                    <div class="crop-handle bottom"></div>
+                                    <div class="crop-handle left"></div>
+                                    <div class="crop-handle right"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cropping-status">
+                            <span id="croppingStatusText">🎯 Drag to select teeth area or use auto-detect</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="shade-analysis">
@@ -83,7 +114,13 @@
             </div>
 
             <div class="shade-guide-reference">
-                <h3>VITA Shade Guide Reference</h3>
+                <div class="shade-guide-header">
+                    <h3 id="shadeGuideTitle">VITA Shade Guide Reference</h3>
+                    <div class="shade-guide-selector">
+                        <button id="vitaGuideBtn" class="guide-btn active">VITA Classical</button>
+                        <button id="threeDMasterBtn" class="guide-btn">3D Master</button>
+                    </div>
+                </div>
                 <div class="shade-guide-grid" id="shadeGuide">
                     <!-- Shade guide will be populated by JavaScript -->
                 </div>
@@ -108,6 +145,7 @@
     <script src="config.js"></script>
     <script src="gemini-api.js"></script>
     <script src="teeth-detector.js"></script>
+    <script src="image-cropper.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
