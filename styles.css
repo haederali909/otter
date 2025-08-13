@@ -66,6 +66,56 @@ header p {
     object-fit: cover;
 }
 
+.detection-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.detection-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 15;
+}
+
+.detection-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #95a5a6;
+    transition: all 0.3s ease;
+}
+
+.detection-indicator.active {
+    background: #27ae60;
+    box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+    animation: pulse 2s infinite;
+}
+
+.detection-indicator.detecting {
+    background: #f39c12;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
 .controls {
     display: flex;
     gap: 10px;
@@ -129,6 +179,27 @@ header p {
     transform: translateY(-2px);
 }
 
+.btn-auto {
+    background: #e67e22;
+    color: white;
+}
+
+.btn-auto:hover:not(:disabled) {
+    background: #d35400;
+    transform: translateY(-2px);
+}
+
+.btn-auto.active {
+    background: #27ae60;
+    animation: pulse 2s infinite;
+}
+
+.capture-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .results-section {
     display: flex;
     flex-direction: column;
@@ -189,6 +260,49 @@ header p {
 .upload-section {
     position: relative;
     display: inline-block;
+}
+
+.detection-settings {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.detection-settings h4 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.setting-group {
+    margin-bottom: 15px;
+}
+
+.setting-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #555;
+    cursor: pointer;
+}
+
+.setting-label input[type="checkbox"] {
+    transform: scale(1.2);
+    accent-color: #3498db;
+}
+
+.setting-label input[type="range"] {
+    flex: 1;
+    max-width: 120px;
+}
+
+.setting-label span:last-child {
+    min-width: 40px;
+    font-weight: 600;
+    color: #3498db;
 }
 
 .image-source-indicator {
@@ -570,6 +684,19 @@ header p {
     
     .upload-section {
         order: -1; /* Move upload button above capture on mobile */
+    }
+    
+    .detection-settings {
+        margin-top: 15px;
+        padding: 15px;
+    }
+    
+    .detection-settings h4 {
+        font-size: 1rem;
+    }
+    
+    .capture-controls {
+        flex-direction: column;
     }
     
     .shade-guide-grid {

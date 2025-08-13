@@ -7,6 +7,7 @@ class DentalShadeDetector {
         this.model = null;
         this.capturedImageData = null;
         this.geminiAnalyzer = null;
+        this.teethDetector = null;
         
         // VITA Shade Guide data with RGB approximations
         this.vitaShadeGuide = {
@@ -41,9 +42,18 @@ class DentalShadeDetector {
     setupEventListeners() {
         document.getElementById('startCamera').addEventListener('click', () => this.startCamera());
         document.getElementById('captureBtn').addEventListener('click', () => this.captureImage());
+        document.getElementById('autoCaptureBtn').addEventListener('click', () => this.toggleAutoCapture());
         document.getElementById('uploadBtn').addEventListener('click', () => this.triggerFileUpload());
         document.getElementById('photoUpload').addEventListener('change', (e) => this.handleFileUpload(e));
         document.getElementById('analyzeBtn').addEventListener('click', () => this.analyzeShade());
+        
+        // Detection settings
+        document.getElementById('liveDetection').addEventListener('change', (e) => this.toggleLiveDetection(e.target.checked));
+        document.getElementById('sensitivitySlider').addEventListener('input', (e) => this.updateSensitivity(e.target.value));
+        document.getElementById('captureDelaySlider').addEventListener('input', (e) => this.updateCaptureDelay(e.target.value));
+        
+        // Auto-capture event
+        document.addEventListener('autoCapture', (e) => this.handleAutoCapture(e.detail));
         
         // Setup drag & drop functionality
         this.setupDragAndDrop();
@@ -72,6 +82,86 @@ class DentalShadeDetector {
         }
     }
     
+    initializeTeethDetector() {
+        try {
+            const overlayCanvas = document.getElementById('detectionOverlay');
+            this.teethDetector = new TeethDetector(this.video, overlayCanvas, this.geminiAnalyzer);
+            
+            // Start detection if enabled by default
+            if (document.getElementById('liveDetection').checked) {
+                this.teethDetector.startDetection();
+            }
+            
+            console.log('🤖 Teeth detector ready');
+        } catch (error) {
+            console.error('Teeth detector initialization error:', error);
+        }
+    }
+    
+    toggleLiveDetection(enabled) {
+        if (!this.teethDetector) return;
+        
+        if (enabled) {
+            this.teethDetector.startDetection();
+            this.showSuccess('🤖 Live teeth detection enabled');
+        } else {
+            this.teethDetector.stopDetection();
+            this.showWarning('🤖 Live teeth detection disabled');
+        }
+    }
+    
+    toggleAutoCapture() {
+        if (!this.teethDetector) return;
+        
+        const button = document.getElementById('autoCaptureBtn');
+        
+        if (this.teethDetector.autoCaptureEnabled) {
+            this.teethDetector.disableAutoCapture();
+            button.textContent = '🤖 Auto Capture';
+            button.classList.remove('active');
+            this.showWarning('🤖 Auto-capture disabled');
+        } else {
+            this.teethDetector.enableAutoCapture();
+            button.textContent = '🛑 Stop Auto';
+            button.classList.add('active');
+            this.showSuccess('🤖 Auto-capture enabled - position teeth in view');
+        }
+    }
+    
+    updateSensitivity(value) {
+        const percentage = Math.round(value * 100);
+        document.getElementById('sensitivityValue').textContent = `${percentage}%`;
+        
+        if (this.teethDetector) {
+            this.teethDetector.setSensitivity(parseFloat(value));
+        }
+    }
+    
+    updateCaptureDelay(value) {
+        document.getElementById('captureDelayValue').textContent = `${value}s`;
+        
+        if (this.teethDetector) {
+            this.teethDetector.setAutoCaptureDelay(parseInt(value));
+        }
+    }
+    
+    handleAutoCapture(detail) {
+        console.log('🤖 Auto-capture triggered with detections:', detail);
+        
+        // Perform the capture
+        this.captureImage();
+        
+        // Show notification
+        this.showSuccess(`📸 Auto-captured! Confidence: ${Math.round(detail.confidence * 100)}%`);
+        
+        // Temporarily disable auto-capture to prevent spam
+        setTimeout(() => {
+            if (this.teethDetector && this.teethDetector.autoCaptureEnabled) {
+                this.teethDetector.lastToothDetection = 0; // Reset detection timer
+            }
+        }, 3000);
+    }
+    
     async startCamera() {
         try {
             const constraints = {
@@ -92,6 +182,9 @@ class DentalShadeDetector {
             this.video.onloadedmetadata = () => {
                 this.canvas.width = this.video.videoWidth;
                 this.canvas.height = this.video.videoHeight;
+                
+                // Initialize teeth detector
+                this.initializeTeethDetector();
             };
             
         } catch (error) {
