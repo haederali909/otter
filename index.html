@@ -22,15 +22,23 @@
                 <div class="controls">
                     <button id="startCamera" class="btn btn-primary">Start Camera</button>
                     <button id="captureBtn" class="btn btn-secondary" disabled>Capture Image</button>
+                    <div class="upload-section">
+                        <input type="file" id="photoUpload" accept="image/*" style="display: none;">
+                        <button id="uploadBtn" class="btn btn-upload">📁 Upload Photo</button>
+                    </div>
                     <button id="analyzeBtn" class="btn btn-success" disabled>Analyze Shade</button>
                 </div>
             </div>
 
             <div class="results-section">
                 <div class="captured-image">
-                    <h3>Captured Image</h3>
-                    <div id="capturedImageContainer">
-                        <p>No image captured yet</p>
+                    <h3>Image for Analysis</h3>
+                    <div id="capturedImageContainer" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <p>📷 Take a photo with camera</p>
+                            <p>📁 Upload an existing image</p>
+                            <p>🖱️ Or drag & drop an image here</p>
+                        </div>
                     </div>
                 </div>
 
@@ -53,11 +61,12 @@
         <div class="info-panel">
             <h3>Instructions</h3>
             <ol>
-                <li>Click "Start Camera" to access your device camera</li>
-                <li>Position the tooth in good lighting conditions</li>
-                <li>Click "Capture Image" to take a photo</li>
-                <li>Click "Analyze Shade" to detect the tooth shade</li>
-                <li>View the matched shade from the VITA guide</li>
+                <li><strong>Option 1 - Camera:</strong> Click "Start Camera" and capture a live photo</li>
+                <li><strong>Option 2 - Upload:</strong> Click "Upload Photo" to select an existing image</li>
+                <li><strong>Option 3 - Drag & Drop:</strong> Drag an image file directly to the analysis area</li>
+                <li>Ensure good lighting conditions for accurate analysis</li>
+                <li>Click "Analyze Shade" to get AI-powered tooth shade detection</li>
+                <li>View the matched shade from the VITA guide with professional insights</li>
             </ol>
         </div>
     </div>

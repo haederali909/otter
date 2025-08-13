@@ -119,6 +119,16 @@ header p {
     transform: translateY(-2px);
 }
 
+.btn-upload {
+    background: #9b59b6;
+    color: white;
+}
+
+.btn-upload:hover:not(:disabled) {
+    background: #8e44ad;
+    transform: translateY(-2px);
+}
+
 .results-section {
     display: flex;
     flex-direction: column;
@@ -148,6 +158,50 @@ header p {
     background: #f8f9fa;
     border-radius: 10px;
     border: 2px dashed #dee2e6;
+    transition: all 0.3s ease;
+}
+
+#capturedImageContainer.drop-zone {
+    cursor: pointer;
+}
+
+#capturedImageContainer.drop-zone:hover {
+    border-color: #9b59b6;
+    background: #f0f8ff;
+}
+
+#capturedImageContainer.drop-zone.drag-over {
+    border-color: #27ae60;
+    background: #f0fff0;
+    transform: scale(1.02);
+}
+
+.drop-zone-content {
+    text-align: center;
+    color: #7f8c8d;
+}
+
+.drop-zone-content p {
+    margin: 8px 0;
+    font-size: 0.9rem;
+}
+
+.upload-section {
+    position: relative;
+    display: inline-block;
+}
+
+.image-source-indicator {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(52, 152, 219, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    z-index: 10;
 }
 
 #capturedImageContainer img {
@@ -512,6 +566,10 @@ header p {
     
     .controls {
         flex-direction: column;
+    }
+    
+    .upload-section {
+        order: -1; /* Move upload button above capture on mobile */
     }
     
     .shade-guide-grid {

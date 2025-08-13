@@ -41,7 +41,12 @@ class DentalShadeDetector {
     setupEventListeners() {
         document.getElementById('startCamera').addEventListener('click', () => this.startCamera());
         document.getElementById('captureBtn').addEventListener('click', () => this.captureImage());
+        document.getElementById('uploadBtn').addEventListener('click', () => this.triggerFileUpload());
+        document.getElementById('photoUpload').addEventListener('change', (e) => this.handleFileUpload(e));
         document.getElementById('analyzeBtn').addEventListener('click', () => this.analyzeShade());
+        
+        // Setup drag & drop functionality
+        this.setupDragAndDrop();
     }
     
     async loadAIModel() {
@@ -104,24 +109,139 @@ class DentalShadeDetector {
         // Draw current video frame to canvas
         this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
         
-        // Get image data
-        this.capturedImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Convert canvas to image and display
-        const dataURL = this.canvas.toDataURL('image/jpeg', 0.8);
-        const img = document.createElement('img');
-        img.src = dataURL;
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '200px';
-        img.style.borderRadius = '8px';
-        
-        const container = document.getElementById('capturedImageContainer');
-        container.innerHTML = '';
-        container.appendChild(img);
-        
-        document.getElementById('analyzeBtn').disabled = false;
+        // Get image data and display
+        this.processImageForAnalysis('camera');
         
         console.log('Image captured successfully');
+    }
+    
+    triggerFileUpload() {
+        document.getElementById('photoUpload').click();
+    }
+    
+    handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            this.processUploadedFile(file);
+        }
+    }
+    
+    processUploadedFile(file) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            this.showError('Please select a valid image file.');
+            return;
+        }
+        
+        // Validate file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            this.showError('Image file too large. Please select a file under 10MB.');
+            return;
+        }
+        
+        console.log('Processing uploaded file:', file.name);
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                // Draw uploaded image to canvas
+                this.canvas.width = img.width;
+                this.canvas.height = img.height;
+                this.ctx.drawImage(img, 0, 0);
+                
+                // Process for analysis
+                this.processImageForAnalysis('upload', img.src);
+                
+                this.showSuccess(`Image "${file.name}" uploaded successfully!`);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    processImageForAnalysis(source, imageSrc = null) {
+        // Get image data from canvas
+        this.capturedImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Create display image
+        const displayImg = document.createElement('img');
+        displayImg.src = imageSrc || this.canvas.toDataURL('image/jpeg', 0.8);
+        displayImg.style.maxWidth = '100%';
+        displayImg.style.maxHeight = '200px';
+        displayImg.style.borderRadius = '8px';
+        
+        // Add source indicator
+        const sourceIndicator = document.createElement('div');
+        sourceIndicator.className = 'image-source-indicator';
+        sourceIndicator.innerHTML = source === 'camera' ? '📷 Camera Capture' : '📁 Uploaded Image';
+        
+        // Create image wrapper for positioning
+        const imageWrapper = document.createElement('div');
+        imageWrapper.style.position = 'relative';
+        imageWrapper.style.display = 'inline-block';
+        imageWrapper.appendChild(displayImg);
+        imageWrapper.appendChild(sourceIndicator);
+        
+        // Update container
+        const container = document.getElementById('capturedImageContainer');
+        container.innerHTML = '';
+        container.appendChild(imageWrapper);
+        container.classList.remove('drop-zone');
+        
+        // Enable analysis
+        document.getElementById('analyzeBtn').disabled = false;
+    }
+    
+    setupDragAndDrop() {
+        const dropZone = document.getElementById('capturedImageContainer');
+        
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, this.preventDefaults, false);
+            document.body.addEventListener(eventName, this.preventDefaults, false);
+        });
+        
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => this.highlight(dropZone), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => this.unhighlight(dropZone), false);
+        });
+        
+        // Handle dropped files
+        dropZone.addEventListener('drop', (e) => this.handleDrop(e), false);
+        
+        // Click to upload functionality
+        dropZone.addEventListener('click', () => {
+            if (dropZone.classList.contains('drop-zone')) {
+                this.triggerFileUpload();
+            }
+        });
+    }
+    
+    preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    highlight(element) {
+        element.classList.add('drag-over');
+    }
+    
+    unhighlight(element) {
+        element.classList.remove('drag-over');
+    }
+    
+    handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            this.processUploadedFile(files[0]);
+        }
     }
     
     async analyzeShade() {

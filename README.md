@@ -5,7 +5,9 @@ A web-based application that uses AI and computer vision to detect and match too
 ## Features
 
 - **🤖 Gemini AI Integration**: Professional-grade shade analysis using Google's advanced AI
-- **Real-time Camera Access**: Use your device's camera to capture tooth images
+- **📷 Real-time Camera Access**: Use your device's camera to capture tooth images
+- **📁 Photo Upload**: Upload existing images from your device for analysis
+- **🖱️ Drag & Drop**: Drag and drop images directly for instant analysis
 - **AI-Powered Analysis**: Uses TensorFlow.js and computer vision algorithms for color analysis
 - **VITA Shade Guide Matching**: Compares captured colors against the standard VITA shade guide
 - **Professional UI**: Clean, modern interface designed for dental professionals
