@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>IPTV Player</title>
+	<style>
+		body { margin: 0; font-family: system-ui, -apple-system, Roboto, Arial, sans-serif; background: #0b0f14; color: #e6edf3; }
+		.header { padding: 12px 16px; background: #111827; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+		.header input, .header select, .header button { height: 36px; border-radius: 6px; border: 1px solid #374151; background: #0b0f14; color: #e6edf3; padding: 0 10px; }
+		.header button { background: #2563eb; border-color: #2563eb; cursor: pointer; }
+		.header button:disabled { opacity: 0.6; cursor: not-allowed; }
+		.container { display: grid; grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: 100vh; }
+		.video-wrapper { display: grid; place-items: center; background: #000; }
+		video { width: 100%; height: 100%; max-height: calc(100vh - 120px); background: #000; }
+		.footer { padding: 8px 16px; font-size: 12px; color: #9ca3af; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<input id="url" placeholder="Base m3u8 URL (without token)" style="flex:1; min-width: 220px" />
+			<input id="tokenKey" placeholder="Token key/secret" style="width: 160px" />
+			<select id="tokenAlgo" style="width: 120px">
+				<option value="timestamp">timestamp</option>
+				<option value="sha256">sha256</option>
+			</select>
+			<input id="servers" placeholder="Backup servers (comma-separated)" style="flex: 1; min-width: 260px" />
+			<button id="play">Play</button>
+		</div>
+		<div class="video-wrapper">
+			<video id="video" controls playsinline></video>
+		</div>
+		<div class="footer">
+			<span id="status">Idle</span>
+		</div>
+	</div>
+
+	<script>
+	// Lightweight SHA-256 for token if needed (no external fetches)
+	// Source: minimal implementation adapted
+	async function sha256Hex(message) {
+		const msgUint8 = new TextEncoder().encode(message);
+		const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+		const hashArray = Array.from(new Uint8Array(hashBuffer));
+		return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+	}
+
+	function generateToken(baseUrl, key, algo) {
+		const ts = Math.floor(Date.now() / 1000);
+		if (algo === 'timestamp') {
+			return { token: String(ts), params: { ts } };
+		}
+		return { token: null, params: { ts, sig: null, key } };
+	}
+
+	function withToken(url, tokenData) {
+		const u = new URL(url);
+		Object.entries(tokenData.params).forEach(([k, v]) => {
+			if (v !== null && v !== undefined) u.searchParams.set(k, v);
+		});
+		if (tokenData.token) u.searchParams.set('token', tokenData.token);
+		return u.toString();
+	}
+
+	function parseServers(input) {
+		return input
+			.split(',')
+			.map(s => s.trim())
+			.filter(Boolean);
+	}
+
+	function setStatus(text) {
+		document.getElementById('status').textContent = text;
+	}
+
+	function pickNextServer(currentIndex, serverListLength) {
+		return (currentIndex + 1) % serverListLength;
+	}
+
+	function rewriteBase(url, newBase) {
+		try {
+			const src = new URL(url);
+			const base = new URL(newBase);
+			return base.origin + src.pathname + (src.search || '') + (src.hash || '');
+		} catch (_) {
+			return url;
+		}
+	}
+
+	const video = document.getElementById('video');
+	let hls = null;
+
+	async function loadStream(baseUrl, backups, tokenKey, tokenAlgo) {
+		if (hls) {
+			hls.destroy();
+			hls = null;
+		}
+
+		const servers = [baseUrl, ...backups];
+		let index = 0;
+
+		async function tryLoad(idx) {
+			const chosen = servers[idx];
+			let urlToPlay = chosen;
+
+			// If chosen is base to rewrite, ensure path preserved
+			if (idx > 0) {
+				urlToPlay = rewriteBase(baseUrl, chosen);
+			}
+
+			let tokenData = generateToken(urlToPlay, tokenKey, tokenAlgo);
+			if (tokenAlgo === 'sha256') {
+				const payload = new URL(urlToPlay).pathname + String(tokenData.params.ts) + String(tokenKey || '');
+				tokenData.params.sig = await sha256Hex(payload);
+			}
+			const finalUrl = withToken(urlToPlay, tokenData);
+
+			setStatus(`Loading: ${finalUrl}`);
+
+			return new Promise((resolve) => {
+				if (video.canPlayType('application/vnd.apple.mpegurl')) {
+					video.src = finalUrl;
+					video.play().then(() => resolve(true)).catch(() => resolve(false));
+					return;
+				}
+
+				// dynamic import hls.js from CDN
+				const script = document.createElement('script');
+				script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js';
+				script.onload = () => {
+					if (window.Hls && window.Hls.isSupported()) {
+						const config = {
+							maxBufferLength: 30,
+							maxMaxBufferLength: 60,
+							fragLoadingTimeout: 10000,
+							manifestLoadingTimeout: 10000,
+							xhrSetup: (xhr, url) => {
+								// Optionally add headers if backend requires
+							}
+						};
+						hls = new window.Hls(config);
+						hls.attachMedia(video);
+						hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
+							hls.loadSource(finalUrl);
+							video.play().then(() => resolve(true)).catch(() => resolve(false));
+						});
+						hls.on(window.Hls.Events.ERROR, (event, data) => {
+							if (data.fatal) {
+								resolve(false);
+							}
+						});
+					} else {
+						resolve(false);
+					}
+				};
+				script.onerror = () => resolve(false);
+				document.head.appendChild(script);
+			});
+		}
+
+		for (let attempt = 0; attempt < servers.length; attempt++) {
+			const ok = await tryLoad(index);
+			if (ok) {
+				setStatus(`Playing via server ${index + 1}/${servers.length}`);
+				return;
+			}
+			index = pickNextServer(index, servers.length);
+			setStatus(`Failover to server ${index + 1}`);
+		}
+		setStatus('All servers failed.');
+	}
+
+	document.getElementById('play').addEventListener('click', async () => {
+		const baseUrl = document.getElementById('url').value.trim();
+		const tokenKey = document.getElementById('tokenKey').value.trim();
+		const tokenAlgo = document.getElementById('tokenAlgo').value;
+		const backups = parseServers(document.getElementById('servers').value);
+		if (!baseUrl) {
+			setStatus('Please enter an m3u8 URL.');
+			return;
+		}
+		await loadStream(baseUrl, backups, tokenKey, tokenAlgo);
+	});
+	</script>
+</body>
+</html>
